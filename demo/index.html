@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DRI Plant Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,400..800&family=Noto+Sans+Devanagari:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE work: a plant control register, dense and plain, built for guards on phones and managers on desktops
+   IDEA the bound gate register and weighbridge slip book, turned into live screens with stamped serial numbers
+   PICTURE the working screens themselves; dashboard leads with live stock bars against minimum levels
+   COLOUR white ground, near-black ink, charcoal band, iron-ore orange accent, red for negative, amber for low
+   TYPE Archivo wide 800 for titles and big figures + Archivo text, Noto Devanagari for Hindi
+   LAYOUT charcoal top band and tab row; one calm form column on phones, form + list side by side on desktops */
+:root{color-scheme:light dark;--bg:light-dark(#ffffff,#121417);--ink:light-dark(#15171a,#eceef0);--mut:light-dark(#5b616a,#9ba2ab);--line:light-dark(#dde1e5,#2b3036);--panel:light-dark(#f4f5f6,#1a1d21);--band:light-dark(#1d2025,#0a0c0e);--acc:light-dark(#c2410c,#f2803f);--accbg:light-dark(#fdeee5,#3a2214);--bad:light-dark(#c01c1c,#f87171);--badbg:light-dark(#fdecec,#3b1717);--warn:light-dark(#a04f05,#fbbf24);--warnbg:light-dark(#fdf3e1,#382a0e);--ok:light-dark(#157a3a,#4ade80);--okbg:light-dark(#e7f6ec,#12301d)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 Archivo,"Noto Sans Devanagari",system-ui,sans-serif;overflow-x:clip}
+.wrap{max-width:1240px;margin:0 auto;padding-left:max(16px,4vw);padding-right:max(16px,4vw)}
+.top{background:var(--band);color:#f3f4f5}
+.topin{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between;padding-top:12px;padding-bottom:12px}
+.brand b{display:block;font-size:18px;font-weight:800;font-stretch:112%;letter-spacing:-.01em}
+.brand span{font-size:13px;color:#b8bdc4}
+.hdr{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.chip{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:4px 12px;border-radius:999px;border:1px solid #3d434b;background:transparent;color:#f3f4f5;font:inherit;font-size:14px;cursor:pointer}
+.chip.off{background:#7c2d12;border-color:#c2410c}
+.dot{width:8px;height:8px;border-radius:50%;background:#4ade80}.off .dot{background:#fbbf24}
+.nav{background:var(--band);border-top:1px solid #30353c;display:flex;gap:2px;overflow-x:auto;padding:0 max(16px,4vw)}
+.nav button{flex:none;min-height:44px;padding:0 14px;background:none;border:0;border-bottom:3px solid transparent;color:#c3c8ce;font:inherit;font-size:15px;cursor:pointer}
+.nav button.on{color:#fff;border-bottom-color:var(--acc);font-weight:600}
+.banner{background:var(--warnbg);color:var(--warn);padding:10px max(16px,4vw);font-size:14px}
+main{padding-top:24px;padding-bottom:64px}
+h1{font-size:clamp(28px,4vw,40px);line-height:1.05;letter-spacing:-.02em;font-weight:800;font-stretch:110%;margin:0 0 6px;text-wrap:balance}
+h2{font-size:20px;font-weight:700;margin:0 0 12px;letter-spacing:-.01em}
+.sub{color:var(--mut);margin:0 0 20px;font-size:15px}
+.note{color:var(--mut);font-size:13px}
+.grid2{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:24px;align-items:start}
+.grid2.even{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+@media(max-width:860px){.grid2,.grid2.even{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px}
+.panel+.panel{margin-top:20px}
+.tabs{display:flex;gap:6px;margin-bottom:14px}
+.tabs button{flex:1;min-height:48px;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;font:inherit;font-weight:600;cursor:pointer}
+.tabs button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+form .f{margin-bottom:12px}
+label{display:block;font-size:14px;font-weight:600;margin-bottom:4px}
+input,select,textarea{width:100%;font:inherit;font-size:16px;min-height:46px;padding:8px 12px;border:1px solid light-dark(#b9bfc6,#3d434b);border-radius:8px;background:var(--bg);color:var(--ink)}
+textarea{min-height:64px}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid color-mix(in srgb,var(--acc) 55%,transparent);outline-offset:1px}
+input.up{text-transform:uppercase}
+.row2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+.err{color:var(--bad);font-size:13px;min-height:0}
+.err:empty{display:none}
+.auto{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:14px;color:var(--mut);background:var(--bg);border:1px dashed var(--line);border-radius:8px;padding:8px 12px;margin-bottom:12px}
+.auto b{color:var(--ink);font-variant-numeric:tabular-nums}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 16px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;font-size:15px;font-weight:600;cursor:pointer;white-space:nowrap}
+.btn.pri{background:var(--acc);border-color:var(--acc);color:#fff}
+.btn.big{width:100%;min-height:54px;font-size:17px}
+.btn.sm{min-height:36px;padding:0 10px;font-size:13px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.danger{color:var(--bad)}
+.photos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.ph{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;aspect-ratio:1;border:2px dashed light-dark(#b9bfc6,#3d434b);border-radius:10px;background:var(--bg);font-size:13px;font-weight:600;text-align:center;cursor:pointer;overflow:hidden;padding:4px}
+.ph input{position:absolute;inset:0;opacity:0;cursor:pointer;min-height:0}
+.ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.ph small{position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.65);color:#fff;font-size:11px;font-weight:400;padding:2px;z-index:1}
+.scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;font-size:13px;color:var(--mut);font-weight:600;border-bottom:2px solid var(--ink);padding:8px 8px;white-space:nowrap}
+td{border-bottom:1px solid var(--line);padding:8px;vertical-align:top}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+td.nw{white-space:nowrap}
+tfoot td{font-weight:700;border-top:2px solid var(--ink)}
+.tag{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.t-in{background:var(--accbg);color:var(--acc)}.t-out{background:var(--panel);color:var(--mut);border:1px solid var(--line)}
+.t-ok{background:var(--okbg);color:var(--ok)}.t-bad{background:var(--badbg);color:var(--bad)}.t-warn{background:var(--warnbg);color:var(--warn)}
+.neg{color:var(--bad);font-weight:700}.low{color:var(--warn);font-weight:700}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5em,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:24px}
+.kpi{background:var(--bg);padding:14px 16px}
+.kpi b{display:block;font-size:clamp(26px,3.4vw,36px);font-weight:800;font-stretch:110%;line-height:1.1;font-variant-numeric:tabular-nums}
+.kpi span{font-size:13px;color:var(--mut)}
+.bars .br{display:grid;grid-template-columns:9.5em minmax(0,1fr) 6.5em;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);font-size:14px}
+.track{position:relative;height:18px;background:var(--panel);border-radius:4px}
+.fill{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:var(--ink)}
+.fill.low{background:var(--warn)}.fill.neg{background:var(--bad)}
+.minmk{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--acc)}
+.bars .v{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:600}
+.cols{display:flex;align-items:flex-end;gap:8px;height:150px;padding-top:18px}
+.cols div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;font-size:12px;color:var(--mut)}
+.cols i{display:block;width:100%;max-width:44px;background:var(--acc);border-radius:4px 4px 0 0;position:relative}
+.cols i em{position:absolute;top:-17px;left:50%;transform:translateX(-50%);font-style:normal;font-size:12px;color:var(--ink);white-space:nowrap}
+.alerts{list-style:none;margin:0;padding:0}
+.alerts li{padding:10px 12px;border-radius:8px;margin-bottom:8px;font-size:14px}
+.users{display:grid;grid-template-columns:repeat(auto-fit,minmax(15em,1fr));gap:12px}
+.ucard{text-align:left;border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:16px;font:inherit;color:var(--ink);cursor:pointer;min-height:120px}
+.ucard:hover{border-color:var(--acc)}
+.ucard b{display:block;font-size:18px}
+.ucard .role{display:inline-block;margin:4px 0 8px;font-size:13px;font-weight:600;color:var(--acc)}
+.ucard p{margin:0;font-size:14px;color:var(--mut)}
+.tools{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin-bottom:14px}
+.tools .f{margin:0;min-width:9em}
+.modal{position:fixed;inset:0;background:rgba(10,12,14,.6);display:flex;align-items:center;justify-content:center;padding:16px;z-index:20}
+.modal[hidden]{display:none}
+.mbox{background:var(--bg);color:var(--ink);border-radius:14px;max-width:460px;width:100%;max-height:92vh;overflow:auto;padding:20px}
+.pass{border:2px solid var(--ink);border-radius:8px;padding:14px;font-size:14px}
+.pass h3{margin:0 0 2px;font-size:18px;font-weight:800;font-stretch:110%}
+.pass dl{display:grid;grid-template-columns:8.5em minmax(0,1fr);gap:4px 10px;margin:12px 0 0}
+.pass dt{color:var(--mut)}.pass dd{margin:0;font-weight:600}
+.pass .big{font-size:28px;font-weight:800;font-variant-numeric:tabular-nums}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:10px;font-size:15px;z-index:30;max-width:90vw}
+.toast[hidden]{display:none}
+.netbox{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:12px;border-radius:8px;background:var(--bg);border:1px solid var(--line);margin-bottom:12px}
+.netbox b{font-size:30px;font-weight:800;font-variant-numeric:tabular-nums}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.chips span{padding:4px 10px;border:1px solid var(--line);border-radius:999px;font-size:14px;background:var(--bg)}
+.check{display:flex;gap:10px;align-items:center;font-weight:600}
+.check input{width:22px;min-height:22px;height:22px}
+.mt{margin-top:24px}
+@media(max-width:600px){table{font-size:13px}th,td{padding:6px 5px}.bars .br{grid-template-columns:7.5em minmax(0,1fr) 5.5em}.photos{gap:6px}}
+@media(prefers-reduced-motion:no-preference){.fill,.cols i{transition:width .4s,height .4s}}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap topin"><div class="brand"><b>Sample DRI Plant</b><span>Plant management system · Phase 1 demo</span></div><div id="hdr" class="hdr"></div></div></header>
+<nav id="nav" class="nav" hidden></nav>
+<div id="banner"></div>
+<main id="main" class="wrap"></main>
+<div id="modal" class="modal" hidden><div class="mbox" id="mbox"></div></div>
+<div id="toast" class="toast" hidden></div>
+<script>
+{
+const $=s=>document.querySelector(s);
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const ds=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const tm=iso=>{if(!iso)return '';const d=new Date(iso);return pad(d.getHours())+':'+pad(d.getMinutes())};
+const dfmt=s=>{if(!s)return '';const p=s.split('-');return p[2]+'/'+p[1]+'/'+p[0]};
+const f2=n=>(Math.round(n*100)/100).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+const f0=n=>Math.round(n).toLocaleString('en-IN');
+let seed=1;const rnd=()=>(seed=seed*16807%2147483647)/2147483647;
+const rr=(a,b)=>a+rnd()*(b-a);const pick=a=>a[Math.floor(rnd()*a.length)];
+const uid=()=>Math.random().toString(36).slice(2,10);
+const normV=v=>String(v||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+const vOk=v=>/^[A-Z]{2}\d{1,2}[A-Z]{0,3}\d{4}$/.test(normV(v));
+const fmtV=v=>{const m=normV(v).match(/^([A-Z]{2})(\d{1,2})([A-Z]{0,3})(\d{4})$/);return m?[m[1],m[2],m[3],m[4]].filter(Boolean).join(' '):String(v||'').toUpperCase()};
+const today=()=>ds(new Date());
+const ROLES={guard:'Security guard',operator:'Weighbridge operator',stores:'Stores / production in-charge',manager:'Manager',admin:'Admin (owner)'};
+const RDESC={guard:'Gate inward and outward entries, photos, mark vehicles out. Sees today only.',operator:'Weighbridge slips linked to gate entries, slip photo.',stores:'Consumption, production, opening stock, stock adjustments.',manager:'Sees everything, all reports. Edits entries with a reason. Approves stock adjustments.',admin:'Everything, plus users, master lists, settings, deleting entries and the audit log.'};
+const VIEWS={dash:'Dashboard',gate:'Gate',inside:'Vehicles inside',wb:'Weighbridge',cp:'Consumption & production',stock:'Stock',reports:'Reports',masters:'Masters',users:'Users',settings:'Settings',audit:'Audit log'};
+const RV={guard:['gate','inside'],operator:['wb'],stores:['cp','stock'],manager:['dash','gate','inside','wb','cp','stock','reports'],admin:['dash','gate','inside','wb','cp','stock','reports','masters','users','settings','audit']};
+const HI={dash:'डैशबोर्ड',gate:'गेट',inside:'अंदर के वाहन',wb:'धर्मकांटा',cp:'खपत और उत्पादन',stock:'स्टॉक',reports:'रिपोर्ट',masters:'मास्टर',users:'यूज़र',settings:'सेटिंग्स',audit:'ऑडिट लॉग',inward:'आवक (कच्चा माल)',outward:'जावक (तैयार माल)',veh:'वाहन नंबर',party:'पार्टी / सप्लायर',customer:'पार्टी / ग्राहक',material:'माल',product:'उत्पाद',bill:'बिल / चालान नंबर',invoice:'इनवॉइस / बिल नंबर',ton:'बिल अनुसार टन (MT)',gc:'जीसी नंबर',driver:'ड्राइवर का नाम',mobile:'ड्राइवर मोबाइल',dest:'गंतव्य',photos:'फोटो',remarks:'टिप्पणी',save:'एंट्री सेव करें',markout:'बाहर करें',signout:'लॉग आउट',front:'सामने',plate:'नंबर प्लेट',load:'माल',gateTitle:'गेट एंट्री',insideTitle:'प्लांट के अंदर वाहन',slip:'धर्मकांटा पर्ची',gross:'ग्रॉस वज़न (MT)',tare:'टेयर वज़न (MT)',net:'नेट वज़न'};
+const EN={inward:'Inward (raw material)',outward:'Outward (finished goods)',veh:'Vehicle no.',party:'Party / supplier',customer:'Party / customer',material:'Material',product:'Product',bill:'Bill / challan no.',invoice:'Invoice / bill no.',ton:'Tonnage as per bill (MT)',gc:'GC no.',driver:'Driver name',mobile:'Driver mobile',dest:'Destination',photos:'Photos',remarks:'Remarks',save:'Save entry',markout:'Mark out',signout:'Sign out',front:'Front',plate:'Number plate',load:'Load',gateTitle:'Gate entry',insideTitle:'Vehicles inside the plant',slip:'Weighbridge slip',gross:'Gross weight (MT)',tare:'Tare weight (MT)',net:'Net weight'};
+let S;
+const t=k=>S&&S.lang==='hi'&&HI[k]?HI[k]:(EN[k]||VIEWS[k]||k);
+
+function buildSeed(){
+  seed=20261124;
+  const now=new Date(),td=ds(now);
+  const s={seedDate:td,lang:'en',online:true,user:null,view:null,gateDir:'in',pend:[],seq:{in:4811,out:1629,slip:6440},
+    users:[{id:'u1',name:'Ramesh Nayak',role:'guard',mob:'98610 44120',on:true},{id:'u2',name:'Prakash Sahu',role:'guard',mob:'94370 22815',on:true},{id:'u3',name:'Bikash Das',role:'operator',mob:'90400 61377',on:true},{id:'u4',name:'Anita Mohanty',role:'stores',mob:'78940 10552',on:true},{id:'u5',name:'Vikram Patnaik',role:'manager',mob:'99370 84021',on:true},{id:'u6',name:'Naman',role:'admin',mob:'98230 00917',on:true}],
+    parties:[{name:'Kalinga Minerals',type:'Supplier',gst:'21AAKCK4471M1Z2',addr:'Barbil, Keonjhar'},{name:'Barbil Ore Traders',type:'Supplier',gst:'21AAJFB2093Q1Z8',addr:'Barbil, Keonjhar'},{name:'Keonjhar Pellets Pvt Ltd',type:'Supplier',gst:'21AADCK7730L1Z4',addr:'Joda, Keonjhar'},{name:'Mahanadi Coal Agency',type:'Supplier',gst:'21AAGFM5512H1Z1',addr:'Talcher, Angul'},{name:'Talcher Coal Movers',type:'Supplier',gst:'21AAFFT9081K1Z6',addr:'Talcher, Angul'},{name:'Sundargarh Dolomite Co',type:'Supplier',gst:'21AAEFS3360D1Z9',addr:'Birmitrapur, Sundargarh'},{name:'Rourkela Rolling Mills',type:'Customer',gst:'21AACCR6618P1Z3',addr:'Rourkela'},{name:'Jharsuguda Induction Furnace',type:'Customer',gst:'21AAHCJ2247F1Z7',addr:'Jharsuguda'},{name:'Sambalpur Power & Bricks',type:'Customer',gst:'21AAKFS8805B1Z5',addr:'Sambalpur'}],
+    raw:['Iron ore','Pellets','Coal','Dolomite'],fg:['Sponge iron lumps','Sponge iron fines','Char'],kilns:['Kiln 1','Kiln 2'],shifts:['A','B','C'],
+    gate:[],slips:[],cons:[],prod:[],adj:[],audit:[],opening:{},
+    settings:{slipRule:true,varPct:1.5,min:{'Iron ore':600,'Pellets':100,'Coal':500,'Dolomite':50,'Sponge iron lumps':100,'Sponge iron fines':0,'Char':0}}};
+  const st=new Date(now);st.setDate(st.getDate()-6);const od=ds(st);
+  const op={'Iron ore':1800,'Pellets':300,'Coal':1500,'Dolomite':55,'Sponge iron lumps':400,'Sponge iron fines':10,'Char':60};
+  for(const k in op)s.opening[k]={q:op[k],d:od};
+  const sup={'Iron ore':['Kalinga Minerals','Barbil Ore Traders'],'Pellets':['Keonjhar Pellets Pvt Ltd'],'Coal':['Mahanadi Coal Agency','Talcher Coal Movers'],'Dolomite':['Sundargarh Dolomite Co']};
+  const cus={'Sponge iron lumps':['Rourkela Rolling Mills','Jharsuguda Induction Furnace'],'Sponge iron fines':['Jharsuguda Induction Furnace'],'Char':['Sambalpur Power & Bricks']};
+  const dest={'Rourkela Rolling Mills':'Rourkela','Jharsuguda Induction Furnace':'Jharsuguda','Sambalpur Power & Bricks':'Sambalpur'};
+  const fn=['Sanjay','Manoj','Rabi','Dilip','Santosh','Ajit','Pradeep','Kailash','Bijay','Tapan','Ramesh','Sunil'],ln=['Behera','Pradhan','Majhi','Sethi','Rout','Barik','Naik','Singh','Mahato'];
+  const veh=()=>pick(['OD','OD','OD','JH','CG'])+' '+pad(Math.floor(rr(1,35)))+' '+String.fromCharCode(65+Math.floor(rr(0,26)))+String.fromCharCode(65+Math.floor(rr(0,26)))+' '+Math.floor(rr(1000,9999));
+  const mob=()=>pick(['9','8','7'])+Math.floor(rr(100000000,999999999));
+  const at=(d,m)=>new Date(d.getTime()+m*60000);
+  const guards=['u1','u2'];
+  for(let k=6;k>=0;k--){
+    const day=new Date(now);day.setDate(now.getDate()-k);const d=ds(day);
+    const ws=new Date(day);ws.setHours(6,0,0,0);let we=new Date(day);we.setHours(23,30,0,0);
+    let frac=1;
+    if(k===0){if(now<ws)ws.setHours(0,0,0,0);we=new Date(now.getTime()-8*60000);frac=Math.min(1,Math.max(.12,(we-ws)/(17.5*3600000)))}
+    let ins=[];for(let i=0;i<10;i++)ins.push('Iron ore');for(let i=0;i<10;i++)ins.push('Coal');ins.push('Pellets');if(k%2===0)ins.push('Pellets');if(k%2===1)ins.push('Dolomite');
+    ins.sort(()=>rnd()-.5);if(k===0)ins=ins.slice(0,Math.max(4,Math.round(ins.length*frac)));
+    ins.forEach((item,i)=>{
+      const inT=at(ws,((i+.5)/ins.length)*((we-ws)/60000)+rr(-8,8));
+      const party=pick(sup[item]);const bill=item==='Dolomite'?rr(9.5,11):rr(24,28.5);
+      const g={id:uid(),dir:'in',sno:++s.seq.in,date:d,inT:inT.toISOString(),outT:null,party,item,billNo:(item==='Coal'?'CH/':'INV/')+Math.floor(rr(1000,9999)),ton:+bill.toFixed(2),gc:'GC'+Math.floor(rr(10000,99999)),driver:pick(fn)+' '+pick(ln),mobile:mob(),dest:'',photos:[],remarks:'',status:'Out',by:pick(guards),pending:false};
+      const last=k===0?ins.length-1-i:99;
+      if(last>1){const v=party==='Barbil Ore Traders'&&rnd()<.6?rr(1.8,3.2):rr(-.3,.6);const tare=rr(8,11),net=+(bill*(1-v/100)).toFixed(2);
+        s.slips.push({id:uid(),sno:++s.seq.slip,gateId:g.id,dir:'in',date:d,veh:'',party,item,gross:+(net+tare).toFixed(2),tare:+tare.toFixed(2),net,grossT:at(inT,15).toISOString(),tareT:at(inT,rr(40,75)).toISOString(),photo:false,remarks:'',by:'u3',pending:false});
+        const ot=at(inT,rr(55,110));if(last>2&&ot<now)g.outT=ot.toISOString();else g.status='Inside';
+      }else g.status='Inside';
+      g.veh=veh();s.gate.push(g);const sl=s.slips.find(x=>x.gateId===g.id);if(sl)sl.veh=g.veh;
+    });
+    let outs=[];for(let i=0;i<6;i++)outs.push('Sponge iron lumps');outs.push('Sponge iron fines');if(k%2===0)outs.push('Sponge iron fines');outs.push('Char');outs.push('Char');
+    outs.sort(()=>rnd()-.5);if(k===0)outs=outs.slice(0,Math.max(2,Math.round(outs.length*frac)));
+    outs.forEach((item,i)=>{
+      const inT=at(ws,((i+.3)/outs.length)*((we-ws)/60000)+rr(-8,8));const party=pick(cus[item]);const ton=item==='Char'?rr(17,19):rr(24,26);
+      const g={id:uid(),dir:'out',sno:++s.seq.out,date:d,inT:inT.toISOString(),outT:null,party,item,billNo:'SI/26-27/'+Math.floor(rr(1000,2999)),ton:+ton.toFixed(2),gc:'GC'+Math.floor(rr(10000,99999)),driver:pick(fn)+' '+pick(ln),mobile:mob(),dest:dest[party],photos:[],remarks:'',status:'Out',by:pick(guards),pending:false,veh:veh()};
+      const last=k===0?outs.length-1-i:99;
+      if(last>0){const tare=rr(8,11),net=+(ton*(1+rr(-.2,.2)/100)).toFixed(2);
+        s.slips.push({id:uid(),sno:++s.seq.slip,gateId:g.id,dir:'out',date:d,veh:g.veh,party,item,gross:+(net+tare).toFixed(2),tare:+tare.toFixed(2),net,grossT:at(inT,70).toISOString(),tareT:at(inT,10).toISOString(),photo:false,remarks:'',by:'u3',pending:false});
+        const ot=at(inT,rr(80,130));if(ot<now)g.outT=ot.toISOString();else g.status='Inside';
+      }else g.status='Inside';
+      s.gate.push(g);
+    });
+    const h=k===0?now.getHours():24;const done=k===0?['A','B','C'].filter(x=>(x==='A'&&h>=14)||(x==='B'&&h>=22)):['A','B','C'];
+    done.forEach(sh=>s.kilns.forEach(kl=>{
+      [['Iron ore',38,42],['Pellets',5,7],['Coal',38,42],['Dolomite',1.3,1.7]].forEach(([it,a,b])=>s.cons.push({id:uid(),date:d,shift:sh,kiln:kl,item:it,qty:+rr(a,b).toFixed(2),remarks:'',by:'u4'}));
+      [['Sponge iron lumps',25,29],['Sponge iron fines',4.5,5.5],['Char',5.5,6.5]].forEach(([it,a,b])=>s.prod.push({id:uid(),date:d,shift:sh,kiln:kl,item:it,qty:+rr(a,b).toFixed(2),remarks:'',by:'u4'}));
+    }));
+  }
+  s.gate.sort((a,b)=>a.inT<b.inT?-1:1);
+  const yd=new Date(now);yd.setDate(now.getDate()-1);const y=ds(yd);
+  const yc=s.gate.find(g=>g.date===y&&g.item==='Coal');
+  if(yc)s.audit.push({at:new Date(yd.setHours(16,12,0,0)).toISOString(),by:'u5',act:'Edited',rec:'Gate inward #'+yc.sno,det:'Tonnage as per bill: '+f2(yc.ton+1)+' → '+f2(yc.ton)+'. Reason: typed wrongly, corrected from challan'});
+  const d3=new Date(now);d3.setDate(now.getDate()-3);
+  s.adj.push({id:uid(),date:ds(d3),item:'Iron ore',qty:-4,reason:'Physical count of yard heap',status:'Approved',by:'u4',appr:'u5'});
+  s.adj.push({id:uid(),date:td,item:'Coal',qty:-6.5,reason:'Physical count today: coal shed heap smaller than book stock',status:'Pending',by:'u4',appr:null});
+  s.gate.filter(g=>g.date===td).forEach(g=>s.audit.push({at:g.inT,by:g.by,act:'Created',rec:(g.dir==='in'?'Gate inward #':'Gate outward #')+g.sno,det:g.veh+', '+g.item+', '+f2(g.ton)+' MT'}));
+  s.slips.filter(x=>x.date===td).forEach(x=>s.audit.push({at:x.grossT>x.tareT?x.grossT:x.tareT,by:'u3',act:'Created',rec:'Weighbridge slip #'+x.sno,det:x.veh+', net '+f2(x.net)+' MT'}));
+  s.audit.sort((a,b)=>a.at<b.at?1:-1);
+  return s;
+}
+function save(){try{const c=JSON.parse(JSON.stringify(S));c.gate.forEach(g=>g.photos=g.photos.map(()=>'' ));localStorage.setItem('dri-demo-v2',JSON.stringify(c))}catch(e){}}
+function load(){try{const c=JSON.parse(localStorage.getItem('dri-demo-v2')||'null');if(c&&c.seedDate===today())return c}catch(e){}return buildSeed()}
+S=load();
+
+const U=id=>S.users.find(u=>u.id===id)||{name:'?'};
+const me=()=>U(S.user);
+const role=()=>me().role;
+const can=v=>S.user&&RV[role()].includes(v);
+const log=(act,rec,det)=>{S.audit.unshift({at:new Date().toISOString(),by:S.user,act,rec,det})};
+const slipOf=g=>S.slips.find(x=>x.gateId===g.id);
+const qtyOf=g=>{const x=slipOf(g);return x?x.net:g.ton};
+const varOf=x=>{const g=S.gate.find(q=>q.id===x.gateId);return g?(x.net-g.ton)/g.ton*100:0};
+function stockRow(item){
+  const raw=S.raw.includes(item),op=S.opening[item]||{q:0,d:'0000-00-00'};let plus=0,minus=0,adj=0;
+  if(raw){S.gate.forEach(g=>{if(g.dir==='in'&&g.item===item&&g.date>=op.d)plus+=qtyOf(g)});S.cons.forEach(c=>{if(c.item===item&&c.date>=op.d)minus+=c.qty})}
+  else{S.prod.forEach(p=>{if(p.item===item&&p.date>=op.d)plus+=p.qty});S.gate.forEach(g=>{if(g.dir==='out'&&g.item===item&&g.date>=op.d)minus+=qtyOf(g)})}
+  S.adj.forEach(a=>{if(a.item===item&&a.status==='Approved'&&a.date>=op.d)adj+=a.qty});
+  const live=op.q+plus-minus+adj,min=S.settings.min[item]||0;
+  return {item,raw,op,plus,minus,adj,live,min,st:live<0?'neg':(min&&live<min?'low':'ok')};
+}
+function toast(m){const e=$('#toast');e.textContent=m;e.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>e.hidden=true,3200)}
+function modal(html){$('#mbox').innerHTML=html;$('#modal').hidden=false;const f=$('#mbox input,#mbox textarea,#mbox select');if(f)f.focus()}
+function closeModal(){$('#modal').hidden=true}
+function go(v){S.view=v;save();render();window.scrollTo(0,0)}
+
+function renderHeader(){
+  const h=$('#hdr');
+  if(!S.user){h.innerHTML=`<button class="chip" data-act="lang">${S.lang==='hi'?'English':'हिंदी'}</button>`;$('#nav').hidden=true;$('#banner').innerHTML='';return}
+  const p=S.pend.length;
+  h.innerHTML=`<button class="chip ${S.online?'':'off'}" data-act="net" title="Simulate losing the phone signal"><span class="dot"></span>${S.online?'Online':'Offline'+(p?' · '+p+' waiting':'')}</button><button class="chip" data-act="lang">${S.lang==='hi'?'English':'हिंदी'}</button><button class="chip" data-act="logout">${esc(me().name)} · ${t('signout')}</button>`;
+  const n=$('#nav');n.hidden=false;n.innerHTML=RV[role()].map(v=>`<button class="${S.view===v?'on':''}" data-act="go" data-id="${v}">${esc(t(v))}</button>`).join('');
+  $('#banner').innerHTML=S.online?'':`<div class="banner">No signal. New entries are saved on this phone and upload when the connection returns${p?' ('+p+' waiting)':''}. Tap Offline to bring the signal back.</div>`;
+}
+function render(){
+  renderHeader();
+  const m=$('#main');
+  if(!S.user){m.innerHTML=vLogin();return}
+  if(!can(S.view))S.view=RV[role()][0];
+  m.innerHTML=({dash:vDash,gate:vGate,inside:vInside,wb:vWb,cp:vCp,stock:vStock,reports:vReports,masters:vMasters,users:vUsers,settings:vSettings,audit:vAudit})[S.view]();
+  if(S.view==='wb')wbCalc();
+  if(S.view==='reports')runReport();
+}
+
+function vLogin(){
+  return `<h1>Sign in</h1><p class="sub">Each person has their own login and sees only their own screens. Tap a person to try the system as them. In the live system they sign in with their mobile number and password.</p>
+  <div class="users">${S.users.filter(u=>u.on).map(u=>`<button class="ucard" data-act="login" data-id="${u.id}"><b>${esc(u.name)}</b><span class="role">${ROLES[u.role]}</span><p>${RDESC[u.role]}</p></button>`).join('')}</div>
+  <p class="note mt">All plant names, parties, vehicles and figures in this demo are sample data. Changes you make stay in this browser only. <button class="btn sm" data-act="reset">Reset demo data</button></p>`;
+}
+
+function vDash(){
+  const d=today(),G=S.gate.filter(g=>g.date===d);
+  const sumP=(it,dt)=>S.prod.filter(p=>p.date===dt&&it.includes(p.item)).reduce((a,p)=>a+p.qty,0);
+  const sumC=(it,dt)=>S.cons.filter(p=>p.date===dt&&it.includes(p.item)).reduce((a,p)=>a+p.qty,0);
+  const k=[[G.filter(g=>g.dir==='in').length,'Vehicles inward today'],[G.filter(g=>g.dir==='out').length,'Vehicles outward today'],[S.gate.filter(g=>g.status==='Inside').length,'Inside the plant now'],[S.slips.filter(x=>x.date===d).length,'Weighbridge slips today'],[f2(sumP(['Sponge iron lumps','Sponge iron fines'],d)),'Sponge iron made today (MT)'],[f2(sumC(['Coal'],d)),'Coal used today (MT)'],[f2(sumC(['Iron ore','Pellets'],d)),'Ore and pellets used today (MT)']];
+  const rows=[...S.raw,...S.fg].map(stockRow);
+  const bar=(list)=>{const mx=Math.max(...list.map(r=>Math.max(Math.abs(r.live),r.min)),1);return list.map(r=>`<div class="br"><span>${esc(r.item)}</span><span class="track"><span class="fill ${r.st}" style="width:${Math.max(r.live,0)/mx*100}%"></span>${r.min?`<span class="minmk" style="left:${r.min/mx*100}%" title="Minimum ${f0(r.min)} MT"></span>`:''}</span><span class="v ${r.st==='ok'?'':r.st}">${f2(r.live)} MT</span></div>`).join('')};
+  const al=[];
+  rows.forEach(r=>{if(r.st==='neg')al.push(['t-bad',`${r.item} stock is negative (${f2(r.live)} MT). An entry is missing or wrong: check production entries, outward tonnage and the opening stock.`]);else if(r.st==='low')al.push(['t-warn',`${r.item} is below its minimum: ${f2(r.live)} MT against ${f0(r.min)} MT.`])});
+  const w=new Date();w.setDate(w.getDate()-6);const wd=ds(w);
+  S.slips.filter(x=>x.dir==='in'&&x.date>=wd&&Math.abs(varOf(x))>S.settings.varPct).slice(-4).reverse().forEach(x=>al.push(['t-warn',`Slip #${x.sno}, ${dfmt(x.date)}: ${x.party}, ${x.veh}. Weighbridge ${f2(x.net)} MT is ${f2(Math.abs(varOf(x)))}% ${varOf(x)<0?'short of':'over'} the bill.`]));
+  const pend=S.adj.filter(a=>a.status==='Pending').length;if(pend)al.push(['t-in',`${pend} stock adjustment waiting for manager approval. <button class="btn sm" data-act="go" data-id="stock">Open stock</button>`]);
+  const days=[];for(let i=6;i>=0;i--){const x=new Date();x.setDate(x.getDate()-i);days.push(ds(x))}
+  const pv=days.map(dd=>sumP(['Sponge iron lumps','Sponge iron fines'],dd));const pm=Math.max(...pv,1);
+  return `<h1>Today at the plant</h1><p class="sub">${dfmt(d)} · updated with every entry · sample data</p>
+  <div class="kpis">${k.map(x=>`<div class="kpi"><b>${x[0]}</b><span>${x[1]}</span></div>`).join('')}</div>
+  <div class="grid2"><div><div class="panel"><h2>Alerts</h2>${al.length?`<ul class="alerts">${al.map(a=>`<li class="${a[0]}">${a[1]}</li>`).join('')}</ul>`:'<p class="note">Nothing needs attention.</p>'}</div>
+  <div class="panel"><h2>Sponge iron made, last 7 days (MT)</h2><div class="cols">${pv.map((v,i)=>`<div><i style="height:${v/pm*100}%"><em>${f0(v)}</em></i>${dfmt(days[i]).slice(0,5)}</div>`).join('')}</div><p class="note">Today's bar fills as each shift's production is entered.</p></div></div>
+  <div class="panel"><h2>Live stock</h2><p class="note" style="margin-top:-6px">Orange tick marks the minimum level set by admin.</p><h3 style="font-size:15px;margin:14px 0 4px">Raw material</h3><div class="bars">${bar(rows.filter(r=>r.raw))}</div><h3 style="font-size:15px;margin:18px 0 4px">Finished goods</h3><div class="bars">${bar(rows.filter(r=>!r.raw))}</div></div></div>`;
+}
+
+function opts(list,sel,ph){return (ph?`<option value="">${ph}</option>`:'')+list.map(x=>`<option${x===sel?' selected':''}>${esc(x)}</option>`).join('')}
+let draft={};
+function vGate(){
+  const r=role(),create=r==='guard'||r==='admin',dir=S.gateDir,inw=dir==='in';
+  const parties=S.parties.filter(p=>p.type===(inw?'Supplier':'Customer')).map(p=>p.name);
+  const nextNo=(inw?S.seq.in:S.seq.out)+1;
+  const form=!create?'':`<div class="panel"><div class="tabs"><button class="${inw?'on':''}" data-act="dir" data-id="in">${t('inward')}</button><button class="${inw?'':'on'}" data-act="dir" data-id="out">${t('outward')}</button></div>
+  <form id="fGate" novalidate><div class="auto"><span>S.No <b>${inw?'IN':'OUT'}-${nextNo}</b></span><span>Date <b>${dfmt(today())}</b></span><span>In time <b>from server on save</b></span></div>
+  <div class="f"><label for="g_veh">${t('veh')}</label><input id="g_veh" class="up" placeholder="OD 09 AB 1234" autocomplete="off"><div class="err" id="e_veh"></div></div>
+  <div class="f"><label for="g_party">${inw?t('party'):t('customer')}</label><select id="g_party">${opts(parties,'','Select')}</select><div class="err" id="e_party"></div></div>
+  <div class="f"><label for="g_item">${inw?t('material'):t('product')}</label><select id="g_item">${opts(inw?S.raw:S.fg,'','Select')}</select><div class="err" id="e_item"></div></div>
+  <div class="row2"><div class="f"><label for="g_bill">${inw?t('bill'):t('invoice')}</label><input id="g_bill"><div class="err" id="e_bill"></div></div><div class="f"><label for="g_ton">${inw?t('ton'):'Tonnage (MT)'}</label><input id="g_ton" inputmode="decimal"><div class="err" id="e_ton"></div></div></div>
+  <div class="row2"><div class="f"><label for="g_gc">${t('gc')}</label><input id="g_gc"></div>${inw?'<div></div>':`<div class="f"><label for="g_dest">${t('dest')}</label><input id="g_dest"></div>`}</div>
+  <div class="row2"><div class="f"><label for="g_drv">${t('driver')}</label><input id="g_drv"><div class="err" id="e_drv"></div></div><div class="f"><label for="g_mob">${t('mobile')}</label><input id="g_mob" inputmode="tel" maxlength="10"><div class="err" id="e_mob"></div></div></div>
+  <div class="f"><label>${t('photos')}</label><div class="photos">${['front','plate','load'].map(p=>`<label class="ph" id="ph_${p}"><input type="file" accept="image/*" capture="environment" data-photo="${p}">${t(p)}<span class="note">Tap to add</span></label>`).join('')}</div><div class="note" style="margin-top:4px">Photos are shrunk on the phone before upload.</div></div>
+  <div class="f"><label for="g_rem">${t('remarks')}</label><textarea id="g_rem"></textarea></div>
+  <div class="err" id="e_dup" style="margin-bottom:8px;font-size:15px"></div>
+  <button class="btn pri big" type="submit">${t('save')}</button></form></div>`;
+  return `<h1>${t('gateTitle')}</h1><p class="sub">${create?'Every vehicle in or out. Date and time come from the server and cannot be changed.':'Gate register. Managers can correct an entry with a reason; the old value goes to the audit log.'}</p>
+  <div class="${create?'grid2':''}">${form}<div>${gateList()}</div></div>`;
+}
+function gateList(){
+  const r=role(),d=S.gateDate||today(),own=r==='guard';const day=own?today():d;
+  const L=S.gate.filter(g=>g.date===day).slice().reverse();
+  return `<div class="tools"><h2 style="margin:0;flex:1">${own?"Today's entries":'Entries for '+dfmt(day)}</h2>${own?'':`<div class="f"><label for="gdate">Date</label><input type="date" id="gdate" value="${day}" max="${today()}"></div>`}</div>
+  <div class="scroll"><table class="stack"><thead><tr><th>S.No</th><th>In</th><th>Vehicle</th><th>Party / item</th><th class="n">Bill MT</th><th class="n">WB net</th><th>Status</th><th></th></tr></thead><tbody>
+  ${L.map(g=>{const x=slipOf(g);return `<tr><td class="nw"><span class="tag ${g.dir==='in'?'t-in':'t-out'}">${g.dir==='in'?'IN':'OUT'}</span> ${g.sno}${g.pending?' <span class="tag t-warn">waiting</span>':''}</td><td class="nw">${tm(g.inT)}</td><td class="nw"><b>${esc(g.veh)}</b></td><td>${esc(g.party)}<br><span class="note">${esc(g.item)}</span></td><td class="n">${f2(g.ton)}</td><td class="n">${x?f2(x.net):'—'}</td><td class="nw">${g.status==='Inside'?'<span class="tag t-warn">Inside</span>':'Out '+tm(g.outT)}</td><td class="nw"><button class="btn sm" data-act="pass" data-id="${g.id}">Pass</button>${r==='manager'||r==='admin'?` <button class="btn sm" data-act="edit" data-id="gate:${g.id}">Edit</button>`:''}${r==='admin'?` <button class="btn sm danger" data-act="del" data-id="${g.id}">Delete</button>`:''}</td></tr>`}).join('')||'<tr><td colspan="8" class="note">No entries.</td></tr>'}
+  </tbody></table></div>`;
+}
+function vInside(){
+  const r=role(),L=S.gate.filter(g=>g.status==='Inside');const canOut=r!=='operator';
+  return `<h1>${t('insideTitle')}</h1><p class="sub">${L.length} vehicles inside now.${S.settings.slipRule?' A vehicle cannot be marked out until its weighbridge slip is done (plant setting).':''}</p>
+  <div class="scroll"><table class="stack"><thead><tr><th>S.No</th><th>Vehicle</th><th>Party / item</th><th>In since</th><th>Weighbridge</th><th></th></tr></thead><tbody>
+  ${L.map(g=>{const x=slipOf(g),mins=Math.round((Date.now()-new Date(g.inT))/60000),lock=S.settings.slipRule&&!x;return `<tr><td class="nw"><span class="tag ${g.dir==='in'?'t-in':'t-out'}">${g.dir==='in'?'IN':'OUT'}</span> ${g.sno}</td><td class="nw"><b>${esc(g.veh)}</b></td><td>${esc(g.party)}<br><span class="note">${esc(g.item)}</span></td><td class="nw">${tm(g.inT)} · ${Math.floor(mins/60)}h ${mins%60}m</td><td>${x?`<span class="tag t-ok">Slip #${x.sno} · ${f2(x.net)} MT</span>`:'<span class="tag t-warn">Slip pending</span>'}</td><td>${canOut?`<button class="btn ${lock?'':'pri'}" data-act="out" data-id="${g.id}" ${lock?'disabled title="Weighbridge slip pending"':''}>${t('markout')}</button>`:''}</td></tr>`}).join('')||'<tr><td colspan="6" class="note">No vehicles inside.</td></tr>'}
+  </tbody></table></div>`;
+}
+
+function vWb(){
+  const r=role(),create=r==='operator'||r==='admin';
+  const wait=S.gate.filter(g=>g.status==='Inside'&&!slipOf(g));
+  const form=!create?'':`<div class="panel"><h2>${t('slip')}</h2><form id="fWb" novalidate><div class="auto"><span>Slip no <b>${S.seq.slip+1}</b></span><span>Time <b>from server on save</b></span></div>
+  <div class="f"><label for="w_gate">Vehicle registered at the gate</label><select id="w_gate"><option value="">Select vehicle (${wait.length} waiting)</option>${wait.map(g=>`<option value="${g.id}">${esc(g.veh)} · ${g.dir==='in'?'IN':'OUT'} ${g.sno} · ${esc(g.item)}</option>`).join('')}</select><div class="err" id="e_wgate"></div></div>
+  <div class="auto" id="w_info">Pick a vehicle and its direction, party and material fill in.</div>
+  <div class="row2"><div class="f"><label for="w_gross">${t('gross')}</label><input id="w_gross" inputmode="decimal"></div><div class="f"><label for="w_tare">${t('tare')}</label><input id="w_tare" inputmode="decimal"></div></div><div class="err" id="e_w" style="margin:-6px 0 10px"></div>
+  <div class="netbox"><span>${t('net')}<br><span class="note" id="w_var">Gross − tare, worked out automatically</span></span><b id="w_net">0.00 MT</b></div>
+  <div class="f"><label>Photo of slip</label><div class="photos"><label class="ph" id="ph_slip"><input type="file" accept="image/*" capture="environment" data-photo="slip">Slip<span class="note">Tap to add</span></label></div></div>
+  <div class="f"><label for="w_rem">${t('remarks')}</label><textarea id="w_rem"></textarea></div>
+  <button class="btn pri big" type="submit">Save slip</button><p class="note">Phase 1: the operator types the weights from the indicator. Phase 2 reads them straight from the weighbridge.</p></form></div>`;
+  const d=S.wbDate||today();const L=S.slips.filter(x=>x.date===d).slice().reverse();
+  return `<h1>Weighbridge</h1><p class="sub">Every slip is linked to a gate entry, so vehicle, party and material are never retyped.</p><div class="${create?'grid2':''}">${form}<div>
+  <div class="tools"><h2 style="margin:0;flex:1">Slips for ${dfmt(d)}</h2><div class="f"><label for="wdate">Date</label><input type="date" id="wdate" value="${d}" max="${today()}"></div></div>
+  <div class="scroll"><table class="stack"><thead><tr><th>Slip</th><th>Vehicle</th><th>Party / item</th><th class="n">Gross</th><th class="n">Tare</th><th class="n">Net MT</th><th class="n">vs bill</th><th></th></tr></thead><tbody>
+  ${L.map(x=>{const v=varOf(x),bad=Math.abs(v)>S.settings.varPct;return `<tr><td class="nw"><span class="tag ${x.dir==='in'?'t-in':'t-out'}">${x.dir==='in'?'IN':'OUT'}</span> ${x.sno}${x.pending?' <span class="tag t-warn">waiting</span>':''}</td><td class="nw"><b>${esc(x.veh)}</b></td><td>${esc(x.party)}<br><span class="note">${esc(x.item)}</span></td><td class="n">${f2(x.gross)}</td><td class="n">${f2(x.tare)}</td><td class="n"><b>${f2(x.net)}</b></td><td class="n ${bad?'neg':''}">${v>0?'+':''}${f2(v)}%</td><td><button class="btn sm" data-act="slipv" data-id="${x.id}">Slip</button></td></tr>`}).join('')||'<tr><td colspan="8" class="note">No slips.</td></tr>'}
+  </tbody></table></div></div></div>`;
+}
+function wbCalc(){
+  const sel=$('#w_gate');if(!sel)return;const g=S.gate.find(q=>q.id===sel.value);
+  $('#w_info').innerHTML=g?`<span>Direction <b>${g.dir==='in'?'Inward':'Outward'}</b></span><span>Party <b>${esc(g.party)}</b></span><span>${g.dir==='in'?'Material':'Product'} <b>${esc(g.item)}</b></span><span>Bill <b>${f2(g.ton)} MT</b></span>`:'Pick a vehicle and its direction, party and material fill in.';
+  const gr=parseFloat($('#w_gross').value),ta=parseFloat($('#w_tare').value);const net=(gr||0)-(ta||0);
+  $('#w_net').textContent=f2(gr&&ta?net:0)+' MT';
+  const vv=$('#w_var');if(g&&gr&&ta&&net>0){const v=(net-g.ton)/g.ton*100,bad=Math.abs(v)>S.settings.varPct;vv.innerHTML=`<span class="${bad?'neg':''}">${v>0?'+':''}${f2(v)}% against bill tonnage${bad?' · above the '+S.settings.varPct+'% limit, manager will be alerted':''}</span>`}else vv.textContent='Gross − tare, worked out automatically';
+}
+
+function vCp(){
+  const r=role(),create=r==='stores'||r==='admin';const d=S.cpDate||today();
+  const f=(id,kind,items)=>`<div class="panel"><h2>${kind==='cons'?'Raw material consumption':'Production'}</h2><form id="${id}" novalidate>
+  <div class="row2"><div class="f"><label for="${id}_d">Date</label><input type="date" id="${id}_d" value="${today()}" max="${today()}"></div><div class="f"><label for="${id}_s">Shift</label><select id="${id}_s">${opts(S.shifts.map(x=>'Shift '+x))}</select></div></div>
+  <div class="row2"><div class="f"><label for="${id}_k">Kiln / section</label><select id="${id}_k">${opts(S.kilns)}</select></div><div class="f"><label for="${id}_i">${kind==='cons'?'Material':'Product'}</label><select id="${id}_i">${opts(items)}</select></div></div>
+  <div class="f"><label for="${id}_q">${kind==='cons'?'Quantity consumed (MT)':'Quantity produced (MT)'}</label><input id="${id}_q" inputmode="decimal"><div class="err" id="${id}_e"></div></div>
+  <div class="f"><label for="${id}_r">${t('remarks')}</label><input id="${id}_r"></div><button class="btn pri big" type="submit">Save ${kind==='cons'?'consumption':'production'}</button></form></div>`;
+  const tb=(L,kind)=>`<div class="scroll"><table class="stack"><thead><tr><th>Shift</th><th>Kiln</th><th>${kind==='cons'?'Material':'Product'}</th><th class="n">MT</th><th>By</th><th></th></tr></thead><tbody>${L.map(c=>`<tr><td>${c.shift}</td><td class="nw">${esc(c.kiln)}</td><td>${esc(c.item)}</td><td class="n">${f2(c.qty)}</td><td>${esc(U(c.by).name)}</td><td>${r==='manager'||r==='admin'?`<button class="btn sm" data-act="edit" data-id="${kind}:${c.id}">Edit</button>`:''}</td></tr>`).join('')||'<tr><td colspan="6" class="note">No entries.</td></tr>'}</tbody></table></div>`;
+  return `<h1>Consumption and production</h1><p class="sub">Shift-wise, kiln-wise. These drive live stock and the coal and ore per tonne figures.</p>
+  ${create?`<div class="grid2 even">${f('fCons','cons',S.raw)}${f('fProd','prod',S.fg)}</div>`:''}
+  <div class="tools mt"><h2 style="margin:0;flex:1">Entries for ${dfmt(d)}</h2><div class="f"><label for="cpdate">Date</label><input type="date" id="cpdate" value="${d}" max="${today()}"></div></div>
+  <div class="grid2 even"><div><h3>Consumption</h3>${tb(S.cons.filter(c=>c.date===d),'cons')}</div><div><h3>Production</h3>${tb(S.prod.filter(c=>c.date===d),'prod')}</div></div>`;
+}
+
+function stockTable(){
+  const rows=[...S.raw,...S.fg].map(stockRow);
+  const tr=r=>`<tr><td>${esc(r.item)}</td><td class="n">${f2(r.op.q)}<br><span class="note">${dfmt(r.op.d)}</span></td><td class="n">+${f2(r.plus)}</td><td class="n">−${f2(r.minus)}</td><td class="n">${r.adj?(r.adj>0?'+':'')+f2(r.adj):'—'}</td><td class="n ${r.st==='ok'?'':r.st}">${f2(r.live)}</td><td class="n">${r.min?f0(r.min):'—'}</td><td>${r.st==='neg'?'<span class="tag t-bad">Negative</span>':r.st==='low'?'<span class="tag t-warn">Below minimum</span>':'<span class="tag t-ok">OK</span>'}</td></tr>`;
+  return `<div class="scroll"><table class="stack"><thead><tr><th>Item</th><th class="n">Opening</th><th class="n">In / made</th><th class="n">Used / sent</th><th class="n">Adjust</th><th class="n">Live MT</th><th class="n">Min</th><th>Status</th></tr></thead><tbody>
+  <tr><td colspan="8"><b>Raw material</b> <span class="note">opening + inward − consumption</span></td></tr>${rows.filter(r=>r.raw).map(tr).join('')}
+  <tr><td colspan="8"><b>Finished goods</b> <span class="note">opening + production − outward</span></td></tr>${rows.filter(r=>!r.raw).map(tr).join('')}</tbody></table></div>
+  <p class="note">Inward and outward use the weighbridge net weight when a slip is linked, otherwise the gate tonnage. Negative stock means an entry is missing or wrong.</p>`;
+}
+function vStock(){
+  const r=role(),mgr=r==='manager'||r==='admin',items=[...S.raw,...S.fg];
+  const pend=S.adj.filter(a=>a.status==='Pending');
+  return `<h1>Stock</h1><p class="sub">Live, updated with every gate, weighbridge, consumption and production entry.</p>${stockTable()}
+  <div class="grid2 even mt"><div>${r==='stores'||r==='admin'?`<div class="panel"><h2>Opening stock</h2><form id="fOpen" novalidate><div class="f"><label for="o_i">Item</label><select id="o_i">${opts(items)}</select></div><div class="row2"><div class="f"><label for="o_q">Quantity (MT)</label><input id="o_q" inputmode="decimal"></div><div class="f"><label for="o_d">As on date</label><input type="date" id="o_d" value="${today()}"></div></div><div class="err" id="o_e"></div><button class="btn big" type="submit">Set opening stock</button></form></div>`:''}
+  <div class="panel"><h2>Stock adjustment</h2><p class="note" style="margin-top:-6px">For differences found in physical stock-taking. Needs manager approval before it counts.</p><form id="fAdj" novalidate><div class="row2"><div class="f"><label for="a_i">Item</label><select id="a_i">${opts(items)}</select></div><div class="f"><label for="a_q">Change (MT, − for less)</label><input id="a_q" inputmode="decimal" placeholder="-6.5"></div></div><div class="f"><label for="a_r">Reason</label><input id="a_r"></div><div class="err" id="a_e"></div><button class="btn big" type="submit">Send for approval</button></form></div></div>
+  <div class="panel"><h2>Adjustments</h2>${S.adj.length?`<div class="scroll"><table class="stack"><thead><tr><th>Date</th><th>Item</th><th class="n">MT</th><th>Reason</th><th>Status</th></tr></thead><tbody>${S.adj.slice().reverse().map(a=>`<tr><td class="nw">${dfmt(a.date)}</td><td>${esc(a.item)}</td><td class="n">${a.qty>0?'+':''}${f2(a.qty)}</td><td>${esc(a.reason)}<br><span class="note">by ${esc(U(a.by).name)}${a.appr?' · '+a.status.toLowerCase()+' by '+esc(U(a.appr).name):''}</span></td><td>${a.status==='Pending'?(mgr?`<button class="btn sm pri" data-act="appr" data-id="${a.id}">Approve</button> <button class="btn sm" data-act="rej" data-id="${a.id}">Reject</button>`:'<span class="tag t-warn">Pending</span>'):`<span class="tag ${a.status==='Approved'?'t-ok':'t-bad'}">${a.status}</span>`}</td></tr>`).join('')}</tbody></table></div>`:'<p class="note">None yet.</p>'}${pend.length&&!mgr?'<p class="note">The manager has been notified.</p>':''}</div></div>`;
+}
+
+const REPORTS={reg:'Daily gate register',inside:'Vehicles inside the plant',party:'Bill vs weighbridge by party',cons:'Consumption by kiln',prod:'Production by kiln and shift',stock:'Stock statement',perf:'DRI performance'};
+function vReports(){
+  const w=new Date();w.setDate(w.getDate()-6);
+  S.rep=S.rep||{k:'perf',from:ds(w),to:today(),dir:'in'};const R=S.rep;
+  return `<h1>Reports</h1><p class="sub">Every report can go to Excel. Printing and PDF work in the live system.</p>
+  <div class="tools"><div class="f" style="flex:2;min-width:14em"><label for="r_k">Report</label><select id="r_k">${Object.entries(REPORTS).map(([k,v])=>`<option value="${k}"${k===R.k?' selected':''}>${v}</option>`).join('')}</select></div>
+  <div class="f"><label for="r_from">From</label><input type="date" id="r_from" value="${R.from}" max="${today()}"></div><div class="f"><label for="r_to">To</label><input type="date" id="r_to" value="${R.to}" max="${today()}"></div>
+  <div class="f" id="r_dirw"><label for="r_dir">Direction</label><select id="r_dir"><option value="in"${R.dir==='in'?' selected':''}>Inward</option><option value="out"${R.dir==='out'?' selected':''}>Outward</option></select></div>
+  <button class="btn pri" data-act="xl">Copy for Excel</button></div><div id="r_out"></div>`;
+}
+function report(){
+  const R=S.rep,inR=d=>d>=R.from&&d<=R.to;
+  if(R.k==='reg'){const L=S.gate.filter(g=>g.dir===R.dir&&inR(g.date));return{h:['Date','S.No','In','Out','Vehicle','Party','Item','Bill / invoice','Bill MT','WB net MT','GC no','Driver','Mobile'],n:[8,9],r:L.map(g=>{const x=slipOf(g);return[dfmt(g.date),g.sno,tm(g.inT),g.outT?tm(g.outT):'Inside',g.veh,g.party,g.item,g.billNo,f2(g.ton),x?f2(x.net):'',g.gc,g.driver,g.mobile]}),f:['Total',L.length+' vehicles','','','','','','',f2(L.reduce((a,g)=>a+g.ton,0)),f2(L.reduce((a,g)=>a+(slipOf(g)?slipOf(g).net:0),0)),'','','']}}
+  if(R.k==='inside'){const L=S.gate.filter(g=>g.status==='Inside');return{h:['Dir','S.No','Vehicle','Party','Item','In','Slip'],n:[],r:L.map(g=>[g.dir==='in'?'IN':'OUT',g.sno,g.veh,g.party,g.item,dfmt(g.date)+' '+tm(g.inT),slipOf(g)?'#'+slipOf(g).sno:'Pending'])}}
+  if(R.k==='party'){const m={};S.gate.filter(g=>g.dir==='in'&&inR(g.date)).forEach(g=>{const x=slipOf(g);if(!x)return;const k=g.party+'|'+g.item;m[k]=m[k]||{p:g.party,i:g.item,n:0,b:0,w:0};m[k].n++;m[k].b+=g.ton;m[k].w+=x.net});const L=Object.values(m).sort((a,b)=>(a.w-a.b)/a.b-(b.w-b.b)/b.b);
+    return{h:['Party','Material','Trucks weighed','Bill MT','Weighbridge MT','Difference MT','Difference %'],n:[2,3,4,5,6],flag:6,r:L.map(x=>[x.p,x.i,x.n,f2(x.b),f2(x.w),f2(x.w-x.b),f2((x.w-x.b)/x.b*100)])}}
+  if(R.k==='cons'||R.k==='prod'){const src=R.k==='cons'?S.cons:S.prod,items=R.k==='cons'?S.raw:S.fg,m={};src.filter(c=>inR(c.date)).forEach(c=>{const k=c.date+'|'+c.kiln+(R.k==='prod'?'|'+c.shift:'');m[k]=m[k]||{d:c.date,k:c.kiln,s:c.shift,v:{}};m[k].v[c.item]=(m[k].v[c.item]||0)+c.qty});const L=Object.values(m).sort((a,b)=>a.d<b.d?-1:a.d>b.d?1:a.k<b.k?-1:a.k>b.k?1:a.s<b.s?-1:1);
+    const h=['Date','Kiln'].concat(R.k==='prod'?['Shift']:[]).concat(items.map(i=>i+' MT'));const off=R.k==='prod'?3:2;
+    return{h,n:items.map((_,i)=>i+off),r:L.map(x=>[dfmt(x.d),x.k].concat(R.k==='prod'?[x.s]:[]).concat(items.map(i=>f2(x.v[i]||0)))),f:['Total',''].concat(R.k==='prod'?['']:[]).concat(items.map(i=>f2(L.reduce((a,x)=>a+(x.v[i]||0),0))))}}
+  if(R.k==='stock'){return{h:['Item','Opening MT','Opening date','In / made MT','Used / sent MT','Adjustments MT','Live MT','Minimum MT'],n:[1,3,4,5,6,7],r:[...S.raw,...S.fg].map(stockRow).map(x=>[x.item,f2(x.op.q),dfmt(x.op.d),f2(x.plus),f2(x.minus),f2(x.adj),f2(x.live),f0(x.min)])}}
+  const days=[];for(let d=new Date(R.from+'T00:00');ds(d)<=R.to;d.setDate(d.getDate()+1))days.push(ds(d));
+  const sm=(src,it,d)=>src.filter(c=>c.date===d&&it.includes(c.item)).reduce((a,c)=>a+c.qty,0);
+  let T={si:0,ore:0,coal:0};const rows=days.map(d=>{const si=sm(S.prod,['Sponge iron lumps','Sponge iron fines'],d),ore=sm(S.cons,['Iron ore','Pellets'],d),coal=sm(S.cons,['Coal'],d);T.si+=si;T.ore+=ore;T.coal+=coal;return[dfmt(d),f2(si),f2(ore),f2(coal),si?f2(coal/si):'—',si?f2(ore/si):'—',ore?f2(si/ore*100):'—']});
+  return{h:['Date','Sponge iron MT','Ore + pellets MT','Coal MT','Coal per tonne','Ore per tonne','Yield %'],n:[1,2,3,4,5,6],r:rows,f:['Total',f2(T.si),f2(T.ore),f2(T.coal),T.si?f2(T.coal/T.si):'—',T.si?f2(T.ore/T.si):'—',T.ore?f2(T.si/T.ore*100):'—']};
+}
+function runReport(){
+  const o=$('#r_out');if(!o)return;$('#r_dirw').style.display=S.rep.k==='reg'?'':'none';
+  const x=report(),num=i=>x.n.includes(i);
+  o.innerHTML=`<div class="scroll"><table><thead><tr>${x.h.map((h,i)=>`<th class="${num(i)?'n':''}">${esc(h)}</th>`).join('')}</tr></thead><tbody>${x.r.map(r=>`<tr>${r.map((c,i)=>`<td class="${num(i)?'n':''}${x.flag===i&&Math.abs(parseFloat(String(c).replace(/,/g,'')))>S.settings.varPct?' neg':''}">${esc(c)}</td>`).join('')}</tr>`).join('')||`<tr><td colspan="${x.h.length}" class="note">Nothing in this range.</td></tr>`}</tbody>${x.f?`<tfoot><tr>${x.f.map((c,i)=>`<td class="${num(i)?'n':''}">${esc(c)}</td>`).join('')}</tr></tfoot>`:''}</table></div>${S.rep.k==='party'?`<p class="note">Red: difference beyond the ${S.settings.varPct}% limit set in settings.</p>`:''}${S.rep.k==='perf'?'<p class="note">Coal and ore per tonne of sponge iron (lumps + fines). Yield = sponge iron ÷ ore and pellets fed.</p>':''}`;
+}
+
+function vMasters(){
+  const list=(k,label)=>`<div class="panel"><h2>${label}</h2><div class="chips">${S[k].map(x=>`<span>${esc(x)}</span>`).join('')}</div><form id="fM_${k}" class="tools" style="margin:0" novalidate><div class="f" style="flex:1"><label for="m_${k}">Add</label><input id="m_${k}"></div><button class="btn" type="submit">Add</button></form></div>`;
+  const vs=[...new Set(S.gate.map(g=>g.veh))],dr=[...new Set(S.gate.map(g=>g.driver))];
+  return `<h1>Master lists</h1><p class="sub">Entry screens pick from these lists, so names are always spelled the same way.</p>
+  <div class="grid2"><div>${list('raw','Raw materials')}${list('fg','Products')}${list('kilns','Kilns and sections')}<div class="panel"><h2>Vehicles and drivers</h2><p class="note">Remembered automatically from gate entries: ${vs.length} vehicles, ${dr.length} drivers.</p></div></div>
+  <div class="panel"><h2>Parties</h2><div class="scroll"><table class="stack"><thead><tr><th>Name</th><th>Type</th><th>GST no.</th><th>Address</th></tr></thead><tbody>${S.parties.map(p=>`<tr><td><b>${esc(p.name)}</b></td><td>${p.type}</td><td class="nw">${esc(p.gst)}</td><td>${esc(p.addr)}</td></tr>`).join('')}</tbody></table></div>
+  <form id="fParty" class="mt" novalidate><h3>Add party</h3><div class="row2"><div class="f"><label for="p_n">Name</label><input id="p_n"></div><div class="f"><label for="p_t">Type</label><select id="p_t"><option>Supplier</option><option>Customer</option></select></div></div><div class="row2"><div class="f"><label for="p_g">GST no.</label><input id="p_g" class="up" maxlength="15"></div><div class="f"><label for="p_a">Address</label><input id="p_a"></div></div><div class="err" id="p_e"></div><button class="btn pri" type="submit">Add party</button></form></div></div>`;
+}
+function vUsers(){
+  return `<h1>Users</h1><p class="sub">One login per person. Disabled users cannot sign in; their past entries stay.</p><div class="grid2"><div class="panel"><h2>Add user</h2><form id="fUser" novalidate><div class="f"><label for="u_n">Name</label><input id="u_n"></div><div class="f"><label for="u_m">Mobile number (login)</label><input id="u_m" inputmode="tel" maxlength="10"></div><div class="f"><label for="u_r">Role</label><select id="u_r">${Object.entries(ROLES).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select></div><div class="err" id="u_e"></div><button class="btn pri big" type="submit">Add user</button></form></div>
+  <div class="scroll"><table class="stack"><thead><tr><th>Name</th><th>Role</th><th>Mobile</th><th>Status</th></tr></thead><tbody>${S.users.map(u=>`<tr><td><b>${esc(u.name)}</b></td><td>${ROLES[u.role]}</td><td class="nw">${esc(u.mob)}</td><td>${u.id===S.user?'<span class="tag t-ok">You</span>':`<button class="btn sm ${u.on?'':'pri'}" data-act="tog" data-id="${u.id}">${u.on?'Disable':'Enable'}</button>`}</td></tr>`).join('')}</tbody></table></div></div>`;
+}
+function vSettings(){
+  const st=S.settings;
+  return `<h1>Settings</h1><p class="sub">Plant rules. Changes are recorded in the audit log.</p><form id="fSet" novalidate><div class="grid2 even"><div class="panel"><h2>Gate and weighbridge</h2><label class="check"><input type="checkbox" id="s_rule" ${st.slipRule?'checked':''}>Vehicle cannot be marked out until its weighbridge slip is done</label><div class="f mt"><label for="s_var">Alert when weighbridge net differs from bill by more than (%)</label><input id="s_var" inputmode="decimal" value="${st.varPct}"></div></div>
+  <div class="panel"><h2>Minimum stock levels (MT)</h2>${[...S.raw,...S.fg].map((i,n)=>`<div class="f"><label for="s_min${n}">${esc(i)}</label><input id="s_min${n}" data-item="${esc(i)}" inputmode="decimal" value="${st.min[i]||0}"></div>`).join('')}</div></div><button class="btn pri big mt" type="submit" style="max-width:320px">Save settings</button></form>
+  <p class="note mt">Demo only: <button class="btn sm" data-act="reset">Reset demo data</button></p>`;
+}
+function vAudit(){
+  const q=(S.aq||'').toLowerCase();const L=S.audit.filter(a=>!q||(U(a.by).name+a.act+a.rec+a.det).toLowerCase().includes(q)).slice(0,150);
+  return `<h1>Audit log</h1><p class="sub">Who created, changed or deleted each entry, and when. Nobody can edit this log.</p><div class="tools"><div class="f" style="flex:1"><label for="aq">Search</label><input id="aq" value="${esc(S.aq||'')}" placeholder="Name, vehicle, slip no."></div></div>
+  <div class="scroll"><table class="stack"><thead><tr><th>When</th><th>Who</th><th>Action</th><th>Record</th><th>Details</th></tr></thead><tbody>${L.map(a=>`<tr><td class="nw">${dfmt(ds(new Date(a.at)))} ${tm(a.at)}</td><td>${esc(U(a.by).name)}</td><td><span class="tag ${a.act==='Created'?'t-ok':a.act==='Deleted'?'t-bad':'t-warn'}">${esc(a.act)}</span></td><td class="nw">${esc(a.rec)}</td><td>${esc(a.det)}</td></tr>`).join('')}</tbody></table></div>`;
+}
+
+function passHtml(g){const x=slipOf(g);return `<div class="pass"><h3>Sample DRI Plant · Gate pass</h3><span class="note">${g.dir==='in'?'Inward · raw material':'Outward · finished goods'}</span><div class="big">${g.dir==='in'?'IN':'OUT'}-${g.sno}</div><dl><dt>Date</dt><dd>${dfmt(g.date)}</dd><dt>In time</dt><dd>${tm(g.inT)}</dd><dt>Out time</dt><dd>${g.outT?tm(g.outT):'Inside'}</dd><dt>Vehicle</dt><dd>${esc(g.veh)}</dd><dt>Party</dt><dd>${esc(g.party)}</dd><dt>${g.dir==='in'?'Material':'Product'}</dt><dd>${esc(g.item)}</dd><dt>${g.dir==='in'?'Bill / challan':'Invoice'}</dt><dd>${esc(g.billNo)}</dd><dt>Bill tonnage</dt><dd>${f2(g.ton)} MT</dd>${x?`<dt>WB net</dt><dd>${f2(x.net)} MT (slip #${x.sno})</dd>`:''}${g.dest?`<dt>Destination</dt><dd>${esc(g.dest)}</dd>`:''}<dt>Driver</dt><dd>${esc(g.driver)} · ${esc(g.mobile)}</dd><dt>Guard</dt><dd>${esc(U(g.by).name)}</dd></dl>${g.photos.filter(Boolean).length?`<div class="photos" style="margin-top:10px">${g.photos.filter(Boolean).map(p=>`<img src="${p}" alt="Vehicle photo" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px">`).join('')}</div>`:''}</div>`}
+function slipHtml(x){const g=S.gate.find(q=>q.id===x.gateId)||{};return `<div class="pass"><h3>Sample DRI Plant · Weighbridge slip</h3><div class="big">#${x.sno}</div><dl><dt>Date</dt><dd>${dfmt(x.date)}</dd><dt>Gate entry</dt><dd>${x.dir==='in'?'IN':'OUT'}-${g.sno||''}</dd><dt>Vehicle</dt><dd>${esc(x.veh)}</dd><dt>Party</dt><dd>${esc(x.party)}</dd><dt>Item</dt><dd>${esc(x.item)}</dd><dt>Gross</dt><dd>${f2(x.gross)} MT · ${tm(x.grossT)}</dd><dt>Tare</dt><dd>${f2(x.tare)} MT · ${tm(x.tareT)}</dd><dt>Net</dt><dd style="font-size:20px">${f2(x.net)} MT</dd><dt>Bill tonnage</dt><dd>${f2(g.ton)} MT (${varOf(x)>0?'+':''}${f2(varOf(x))}%)</dd><dt>Operator</dt><dd>${esc(U(x.by).name)}</dd></dl></div>`}
+const mFoot=`<div style="display:flex;gap:8px;margin-top:14px"><button class="btn" data-act="close" style="flex:1">Close</button></div><p class="note">In the live system this prints on the gate printer or saves as PDF.</p>`;
+
+const num=v=>{const n=parseFloat(String(v).replace(/,/g,''));return isFinite(n)?n:NaN};
+const setErr=(id,m)=>{const e=document.getElementById(id);if(e)e.textContent=m||''};
+function pendAdd(kind,id){if(!S.online){S.pend.push({kind,id});return true}return false}
+
+const ACT={
+  login:id=>{S.user=id;S.view=RV[U(id).role][0];draft={};save();render()},
+  logout:()=>{S.user=null;save();render()},
+  reset:()=>{const l=S.lang;S=buildSeed();S.lang=l;draft={};save();render();toast('Demo data reset')},
+  lang:()=>{S.lang=S.lang==='hi'?'en':'hi';document.documentElement.lang=S.lang;save();render()},
+  go:id=>go(id),
+  dir:id=>{S.gateDir=id;draft={};render()},
+  net:()=>{S.online=!S.online;if(S.online&&S.pend.length){const n=S.pend.length;S.pend.forEach(p=>{const L=p.kind==='gate'?S.gate:S.slips;const r=L.find(x=>x.id===p.id);if(r)r.pending=false});S.pend=[];toast(n+(n>1?' entries':' entry')+' uploaded to the server')}else toast(S.online?'Back online':'Signal lost. Entries will be kept on this phone.');save();render()},
+  pass:id=>{const g=S.gate.find(x=>x.id===id);if(g)modal(passHtml(g)+mFoot)},
+  slipv:id=>{const x=S.slips.find(q=>q.id===id);if(x)modal(slipHtml(x)+mFoot)},
+  close:()=>closeModal(),
+  out:id=>{const g=S.gate.find(x=>x.id===id);if(!g)return;if(S.settings.slipRule&&!slipOf(g)){toast('Weighbridge slip pending');return}g.status='Out';g.outT=new Date().toISOString();log('Marked out',(g.dir==='in'?'Gate inward #':'Gate outward #')+g.sno,g.veh+' left at '+tm(g.outT));save();render();toast(g.veh+' marked out')},
+  appr:id=>{const a=S.adj.find(x=>x.id===id);a.status='Approved';a.appr=S.user;log('Approved','Stock adjustment',a.item+' '+f2(a.qty)+' MT. '+a.reason);save();render();toast('Adjustment approved. Stock updated.')},
+  rej:id=>{const a=S.adj.find(x=>x.id===id);a.status='Rejected';a.appr=S.user;log('Rejected','Stock adjustment',a.item+' '+f2(a.qty)+' MT');save();render()},
+  tog:id=>{const u=U(id);u.on=!u.on;log(u.on?'Enabled':'Disabled','User',u.name);save();render()},
+  xl:()=>{const x=report();const tsv=[x.h].concat(x.r).concat(x.f?[x.f]:[]).map(r=>r.join('\t')).join('\n');try{navigator.clipboard.writeText(tsv).then(()=>toast('Copied. Paste into Excel.'),()=>toast('Copy was blocked by the browser'))}catch(e){toast('Copy was blocked by the browser')}},
+  edit:key=>{const [kind,id]=key.split(':');const L=kind==='gate'?S.gate:kind==='cons'?S.cons:S.prod;const r=L.find(x=>x.id===id);if(!r)return;
+    const F=kind==='gate'?[['veh','Vehicle no.'],['party','Party'],['billNo','Bill / invoice no.'],['ton','Tonnage (MT)'],['gc','GC no.'],['driver','Driver'],['remarks','Remarks']]:[['qty','Quantity (MT)'],['kiln','Kiln'],['remarks','Remarks']];
+    modal(`<h2>Edit ${kind==='gate'?(r.dir==='in'?'gate inward #':'gate outward #')+r.sno:(kind==='cons'?'consumption':'production')+' entry'}</h2><form id="fEdit" data-k="${kind}" data-id="${id}" novalidate>${F.map(([k,l])=>`<div class="f"><label for="ed_${k}">${l}</label><input id="ed_${k}" data-f="${k}" value="${esc(k==='ton'||k==='qty'?f2(r[k]).replace(/,/g,''):r[k])}"></div>`).join('')}<div class="f"><label for="ed_reason">Reason for the change</label><input id="ed_reason"><div class="err" id="ed_e"></div></div><div style="display:flex;gap:8px"><button class="btn" type="button" data-act="close" style="flex:1">Cancel</button><button class="btn pri" type="submit" style="flex:1">Save change</button></div><p class="note">The old value stays in the audit log.</p></form>`)},
+  del:id=>{const g=S.gate.find(x=>x.id===id);modal(`<h2>Delete gate entry ${g.dir==='in'?'IN':'OUT'}-${g.sno}?</h2><p>${esc(g.veh)}, ${esc(g.party)}. Its weighbridge slip is deleted too. This is recorded in the audit log.</p><form id="fDel" data-id="${id}" novalidate><div class="f"><label for="dl_r">Reason</label><input id="dl_r"><div class="err" id="dl_e"></div></div><div style="display:flex;gap:8px"><button class="btn" type="button" data-act="close" style="flex:1">Cancel</button><button class="btn pri" type="submit" style="flex:1;background:var(--bad);border-color:var(--bad)">Delete</button></div></form>`)}
+};
+
+const FORMS={
+  fGate:()=>{
+    const inw=S.gateDir==='in',v=$('#g_veh').value.trim(),party=$('#g_party').value,item=$('#g_item').value,bill=$('#g_bill').value.trim(),ton=num($('#g_ton').value),drv=$('#g_drv').value.trim(),mob=$('#g_mob').value.replace(/\D/g,'');
+    let ok=true;const E=(id,c,m)=>{setErr(id,c?'':m);if(!c)ok=false};
+    E('e_veh',vOk(v),'Enter a valid vehicle number, for example OD 09 AB 1234');E('e_party',party,'Select the party');E('e_item',item,'Select the '+(inw?'material':'product'));E('e_bill',bill,'Enter the '+(inw?'bill or challan':'invoice')+' number');E('e_ton',ton>0&&ton<80,'Enter tonnage in MT, for example 26.40');E('e_drv',drv,'Enter the driver name');E('e_mob',mob.length===10,'Enter a 10-digit mobile number');
+    const dup=S.gate.find(g=>g.status==='Inside'&&normV(g.veh)===normV(v));
+    setErr('e_dup',dup?`${fmtV(v)} is already inside since ${tm(dup.inT)} (${dup.dir==='in'?'IN':'OUT'}-${dup.sno}). Mark it out before a new entry.`:'');if(dup)ok=false;
+    if(!ok){const e=document.querySelector('#fGate .err:not(:empty)');if(e)e.scrollIntoView({block:'center',behavior:'smooth'});return}
+    const now=new Date();const g={id:uid(),dir:S.gateDir,sno:inw?++S.seq.in:++S.seq.out,date:ds(now),inT:now.toISOString(),outT:null,party,item,billNo:bill,ton:+ton.toFixed(2),gc:$('#g_gc').value.trim(),driver:drv,mobile:mob,dest:inw?'':$('#g_dest').value.trim(),photos:['front','plate','load'].map(p=>draft[p]||'').filter(Boolean),remarks:$('#g_rem').value.trim(),status:'Inside',by:S.user,veh:fmtV(v),pending:false};
+    g.pending=pendAdd('gate',g.id);S.gate.push(g);log('Created',(inw?'Gate inward #':'Gate outward #')+g.sno,g.veh+', '+g.item+', '+f2(g.ton)+' MT'+(g.pending?' (saved offline)':''));draft={};save();render();modal(`<p class="tag t-ok" style="font-size:14px">${g.pending?'Saved on this phone. Uploads when signal returns.':'Saved'}</p>`+passHtml(g)+mFoot);
+  },
+  fWb:()=>{
+    const g=S.gate.find(q=>q.id===$('#w_gate').value),gr=num($('#w_gross').value),ta=num($('#w_tare').value);
+    setErr('e_wgate',g?'':'Select a vehicle');const wOk=gr>0&&ta>0&&gr>ta&&gr<120;setErr('e_w',wOk?'':'Enter gross and tare in MT. Gross must be more than tare.');if(!g||!wOk)return;
+    const now=new Date().toISOString();const x={id:uid(),sno:++S.seq.slip,gateId:g.id,dir:g.dir,date:today(),veh:g.veh,party:g.party,item:g.item,gross:+gr.toFixed(2),tare:+ta.toFixed(2),net:+(gr-ta).toFixed(2),grossT:now,tareT:now,photo:!!draft.slip,remarks:$('#w_rem').value.trim(),by:S.user,pending:false};
+    x.pending=pendAdd('slip',x.id);S.slips.push(x);log('Created','Weighbridge slip #'+x.sno,x.veh+', net '+f2(x.net)+' MT');draft={};save();render();modal(slipHtml(x)+mFoot);
+  },
+  fCons:()=>cpSave('fCons','cons'),fProd:()=>cpSave('fProd','prod'),
+  fOpen:()=>{const i=$('#o_i').value,q=num($('#o_q').value),d=$('#o_d').value;if(!(q>=0)||!d){setErr('o_e','Enter quantity and date');return}const old=S.opening[i];S.opening[i]={q,d};log('Opening stock',i,(old?f2(old.q)+' MT on '+dfmt(old.d)+' → ':'')+f2(q)+' MT on '+dfmt(d));save();render();toast('Opening stock set')},
+  fAdj:()=>{const i=$('#a_i').value,q=num($('#a_q').value),r=$('#a_r').value.trim();if(!q||!r){setErr('a_e','Enter the change in MT and a reason');return}const auto=role()==='manager'||role()==='admin';S.adj.push({id:uid(),date:today(),item:i,qty:q,reason:r,status:auto?'Approved':'Pending',by:S.user,appr:auto?S.user:null});log(auto?'Approved':'Requested','Stock adjustment',i+' '+f2(q)+' MT. '+r);save();render();toast(auto?'Adjustment applied':'Sent to manager for approval')},
+  fParty:()=>{const n=$('#p_n').value.trim(),g=$('#p_g').value.trim().toUpperCase();if(!n){setErr('p_e','Enter the party name');return}if(g&&!/^\d{2}[A-Z0-9]{13}$/.test(g)){setErr('p_e','GST number should be 15 characters, for example 21AAKCK4471M1Z2');return}if(S.parties.some(p=>p.name.toLowerCase()===n.toLowerCase())){setErr('p_e','This party is already in the list');return}S.parties.push({name:n,type:$('#p_t').value,gst:g,addr:$('#p_a').value.trim()});log('Created','Party',n);save();render();toast('Party added')},
+  fUser:()=>{const n=$('#u_n').value.trim(),m=$('#u_m').value.replace(/\D/g,'');if(!n||m.length!==10){setErr('u_e','Enter a name and a 10-digit mobile number');return}const u={id:uid(),name:n,role:$('#u_r').value,mob:m.slice(0,5)+' '+m.slice(5),on:true};S.users.push(u);log('Created','User',n+' · '+ROLES[u.role]);save();render();toast('User added')},
+  fSet:()=>{const st=S.settings;st.slipRule=$('#s_rule').checked;const v=num($('#s_var').value);if(v>=0)st.varPct=v;document.querySelectorAll('[data-item]').forEach(i=>{const q=num(i.value);if(q>=0)st.min[i.dataset.item]=q});log('Changed','Settings','Slip rule '+(st.slipRule?'on':'off')+', variance limit '+st.varPct+'%');save();render();toast('Settings saved')},
+  fEdit:f=>{const kind=f.dataset.k,id=f.dataset.id,L=kind==='gate'?S.gate:kind==='cons'?S.cons:S.prod,r=L.find(x=>x.id===id),reason=$('#ed_reason').value.trim();if(!reason){setErr('ed_e','A reason is required');return}
+    const ch=[];f.querySelectorAll('[data-f]').forEach(i=>{const k=i.dataset.f;let nv=i.value.trim();if(k==='ton'||k==='qty'){nv=num(nv);if(!(nv>0)){return}nv=+nv.toFixed(2);if(nv!==r[k])ch.push(k+': '+f2(r[k])+' → '+f2(nv))}else{if(k==='veh')nv=fmtV(nv);if(nv!==String(r[k]??''))ch.push(k+': '+(r[k]||'—')+' → '+(nv||'—'))}r[k]=nv});
+    if(!ch.length){setErr('ed_e','Nothing was changed');return}const rec=kind==='gate'?(r.dir==='in'?'Gate inward #':'Gate outward #')+r.sno:(kind==='cons'?'Consumption ':'Production ')+dfmt(r.date)+' shift '+r.shift;log('Edited',rec,ch.join('; ')+'. Reason: '+reason);closeModal();save();render();toast('Change saved and logged')},
+  fDel:f=>{const r=$('#dl_r').value.trim();if(!r){setErr('dl_e','A reason is required');return}const g=S.gate.find(x=>x.id===f.dataset.id);S.gate=S.gate.filter(x=>x!==g);S.slips=S.slips.filter(x=>x.gateId!==g.id);log('Deleted',(g.dir==='in'?'Gate inward #':'Gate outward #')+g.sno,g.veh+', '+f2(g.ton)+' MT. Reason: '+r);closeModal();save();render();toast('Entry deleted and logged')}
+};
+function cpSave(id,kind){const q=num($('#'+id+'_q').value);if(!(q>0&&q<500)){setErr(id+'_e','Enter quantity in MT');return}const d=$('#'+id+'_d').value||today();const r={id:uid(),date:d,shift:$('#'+id+'_s').value.replace('Shift ',''),kiln:$('#'+id+'_k').value,item:$('#'+id+'_i').value,qty:+q.toFixed(2),remarks:$('#'+id+'_r').value.trim(),by:S.user};(kind==='cons'?S.cons:S.prod).push(r);log('Created',kind==='cons'?'Consumption':'Production',r.item+' '+f2(r.qty)+' MT, '+r.kiln+', shift '+r.shift+', '+dfmt(d));S.cpDate=d;save();render();toast('Saved. Stock updated.')}
+
+function compress(file,cb){const rd=new FileReader();rd.onload=()=>{const im=new Image();im.onload=()=>{const sc=Math.min(1,900/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*sc);c.height=Math.round(im.height*sc);c.getContext('2d').drawImage(im,0,0,c.width,c.height);cb(c.toDataURL('image/jpeg',.6))};im.onerror=()=>cb(null);im.src=rd.result};rd.readAsDataURL(file)}
+
+document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(b&&!b.disabled){ACT[b.dataset.act]&&ACT[b.dataset.act](b.dataset.id,b);return}if(e.target.id==='modal')closeModal()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
+document.addEventListener('submit',e=>{e.preventDefault();const f=e.target;FORMS[f.id]&&FORMS[f.id](f)});
+document.addEventListener('input',e=>{const id=e.target.id;
+  if(id==='w_gross'||id==='w_tare')wbCalc();
+  if(id==='aq'){S.aq=e.target.value;const p=e.target.selectionStart;render();const n=$('#aq');n.focus();n.setSelectionRange(p,p)}
+  if(id==='g_veh'){const v=e.target.value;const dup=vOk(v)&&S.gate.find(g=>g.status==='Inside'&&normV(g.veh)===normV(v));setErr('e_dup',dup?`${fmtV(v)} is already inside since ${tm(dup.inT)} (${dup.dir==='in'?'IN':'OUT'}-${dup.sno}). Mark it out before a new entry.`:'');setErr('e_veh','')}
+  if(e.target.closest&&e.target.closest('form')&&e.target.id){const er=document.getElementById('e_'+id.replace('g_',''));if(er&&id!=='g_veh')er.textContent=''}
+});
+document.addEventListener('change',e=>{const el=e.target,id=el.id;
+  if(id==='w_gate')wbCalc();
+  if(id==='gdate'){S.gateDate=el.value;render()}
+  if(id==='wdate'){S.wbDate=el.value;render()}
+  if(id==='cpdate'){S.cpDate=el.value;render()}
+  if(id==='r_k'||id==='r_from'||id==='r_to'||id==='r_dir'){S.rep={k:$('#r_k').value,from:$('#r_from').value,to:$('#r_to').value,dir:$('#r_dir').value};if(S.rep.from>S.rep.to)S.rep.to=S.rep.from;save();runReport()}
+  if(id==='g_veh'&&vOk(el.value))el.value=fmtV(el.value);
+  if(el.dataset&&el.dataset.photo&&el.files&&el.files[0]){const p=el.dataset.photo,f=el.files[0],box=document.getElementById('ph_'+p);compress(f,url=>{if(!url){toast('Could not read that image');return}draft[p]=url;const kb=Math.round(url.length*.75/1024);let im=box.querySelector('img');if(!im){im=document.createElement('img');im.alt=p+' photo';box.appendChild(im)}im.src=url;let sm=box.querySelector('small');if(!sm){sm=document.createElement('small');box.appendChild(sm)}sm.textContent=Math.round(f.size/1024)+' KB → '+kb+' KB'})}
+});
+document.documentElement.lang=S.lang;
+render();
+}
+</script>
+</body>
+</html>
